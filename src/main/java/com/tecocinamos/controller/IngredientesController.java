@@ -43,12 +43,6 @@ public class IngredientesController {
         Page<IngredienteResponseDTO> dtoPage = ingredienteService.listarIngredientes(pageable);
         return ResponseEntity.ok(dtoPage);
     }
-//
-//    //GET /api/v1/ingredientes → obtener todos los ingredientes
-//    @GetMapping
-//    public ResponseEntity<List<IngredienteResponseDTO>> listarIngredientes() {
-//        return ResponseEntity.ok(ingredienteService.listarIngredientes());
-//    }
 
     /**
      * GET /api/v1/ingredientes/{id}
@@ -59,12 +53,6 @@ public class IngredientesController {
         IngredienteResponseDTO dto = ingredienteService.obtenerIngredientePorId(id);
         return ResponseEntity.ok(dto);
     }
-
-//    //GET /api/v1/ingredientes/{id} → obtener uno por ID
-//    @GetMapping("/{id}")
-//    public ResponseEntity<IngredienteResponseDTO> obtenerPorId(@PathVariable Integer id) {
-//        return ResponseEntity.ok(ingredienteService.obtenerIngredientePorId(id));
-//    }
 
     /**
      * GET /api/v1/ingredientes/por-proveedor/{id}?page=&size=
@@ -89,14 +77,6 @@ public class IngredientesController {
         IngredienteResponseDTO dto = ingredienteService.obtenerIngredientePorId(id);
         return ResponseEntity.ok(dto.getAlergenos());
     }
-//    @GetMapping("/ingredientes/{id}/alergenos")
-//    public ResponseEntity<List<AlergenoResponseDTO>> getAlergenosPorIngrediente(@PathVariable Integer id) {
-//        List<IngredienteAlergeno> relaciones = ingredienteAlergenoRepository.findByIngredienteId(id);
-//        List<AlergenoResponseDTO> alergenos = relaciones.stream()
-//                .map(rel -> new AlergenoResponseDTO(rel.getAlergeno().getId(), rel.getAlergeno().getNombre()))
-//                .toList();
-//        return ResponseEntity.ok(alergenos);
-//    }
 
     /**
      * PUT /api/v1/ingredientes/{id}
@@ -111,13 +91,6 @@ public class IngredientesController {
         return ResponseEntity.ok(actualizado);
     }
 
-    //    //PUT /api/v1/ingredientes/{id} → actualizar ingrediente
-//    @PutMapping("/{id}")
-//    public ResponseEntity<IngredienteResponseDTO> actualizar(@PathVariable Integer id, @RequestBody IngredienteRequestDTO dto) {
-//        IngredienteResponseDTO actualizado = ingredienteService.actualizarIngrediente(id, dto);
-//        return ResponseEntity.ok(actualizado);
-//    }
-
     /**
      * DELETE /api/v1/ingredientes/{id}
      * Eliminar ingrediente (solo ADMIN).
@@ -128,13 +101,4 @@ public class IngredientesController {
         ingredienteService.eliminarIngrediente(id);
         return ResponseEntity.noContent().build();
     }
-
-//    //DELETE /api/v1/ingredientes/{id} → eliminar ingrediente
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-//        ingredienteService.eliminarIngrediente(id);
-//        return ResponseEntity.noContent().build();
-//    }
-
-
 }

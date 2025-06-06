@@ -37,12 +37,6 @@ public class CategoriaController {
         return ResponseEntity.ok(lista);
     }
 
-//    //GET /api/v1/categorias/{id} -> Obtener categoria por id
-//    @GetMapping("/{id}")
-//    public ResponseEntity<CategoriaResponseDTO> obtenerCategoria(@PathVariable Integer id) {
-//        return ResponseEntity.ok(categoriaService.obtenerCategoriaPorId(id));
-//    }
-
     /**
      * PUT /api/v1/categorias/{id}
      * Actualizar categoría (solo ADMIN).

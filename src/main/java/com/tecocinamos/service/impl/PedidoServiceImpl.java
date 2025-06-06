@@ -1,4 +1,3 @@
-// src/main/java/com/tecocinamos/service/impl/PedidoServiceImpl.java
 package com.tecocinamos.service.impl;
 
 import com.tecocinamos.dto.*;
@@ -6,6 +5,7 @@ import com.tecocinamos.exception.BadRequestException;
 import com.tecocinamos.exception.NotFoundException;
 import com.tecocinamos.model.*;
 import com.tecocinamos.repository.*;
+import com.tecocinamos.service.FacturaServiceI;
 import com.tecocinamos.service.PedidoServiceI;
 import com.tecocinamos.service.mail.MailServiceI;
 import com.tecocinamos.util.LogAuditoriaUtil;
@@ -37,16 +37,21 @@ public class PedidoServiceImpl implements PedidoServiceI {
     private LogAuditoriaUtil logUtil;
     @Autowired
     private MailServiceI mailService;
+    @Autowired
+    private FacturaServiceI facturaService;
 
     @Override
     public PedidoResponseDTO crearPedido(PedidoRequestDTO dto) {
+        // 1) Obtener email del usuario autenticado
         String email = SecurityUtil.getAuthenticatedEmail();
         Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
+        // 2) Obtener estado "Pendiente"
         Estado estadoInicial = estadoRepository.findByNombreIgnoreCase("Pendiente")
                 .orElseThrow(() -> new NotFoundException("Estado 'Pendiente' no encontrado"));
 
+        // 3) Crear y guardar el pedido sin detalles todavía
         Pedido pedido = Pedido.builder()
                 .usuario(usuario)
                 .estado(estadoInicial)
@@ -59,6 +64,7 @@ public class PedidoServiceImpl implements PedidoServiceI {
 
         Pedido guardado = pedidoRepository.save(pedido);
 
+        // 4) Recorrer cada detalle para restar stock, calcular subtotal, y guardar DetallesPedido
         BigDecimal total = BigDecimal.ZERO;
         for (DetallesPedidoDTO detalleDTO : dto.getDetalles()) {
             Plato plato = platoRepository.findById(detalleDTO.getPlatoId())
@@ -85,45 +91,67 @@ public class PedidoServiceImpl implements PedidoServiceI {
                     .build();
 
             detallesPedidoRepository.save(detalles);
+            guardado.getDetalles().add(detalles);
         }
 
+        // 5) Actualizar el total en el pedido y guardarlo
         guardado.setTotal(total);
         pedidoRepository.save(guardado);
 
-        // Enviar correo de confirmación al usuario
+        // Recargamos el pedido para que "pedido.getDetalles()" venga con la lista completa
+        Pedido pedidoConDetalles = pedidoRepository.findById(guardado.getId())
+                .orElseThrow(() -> new NotFoundException("Pedido recargado no encontrado"));
+
+        // 6) Generar la factura en PDF (byte[]) a partir del pedido recién guardado
+        byte[] pdfBytes = facturaService.generarFacturaPdf(pedidoConDetalles.getId());
+
+        // 7) Enviar correo de confirmación al usuario con el PDF adjunto
         String to = usuario.getEmail();
         String subject = "Confirmación de tu pedido #" + guardado.getId();
-        // Construir un texto plano con los detalles del pedido
-        StringBuilder bodyBuilder = new StringBuilder();
-        bodyBuilder.append("Hola ").append(usuario.getNombre()).append(",\n\n");
-        bodyBuilder.append("Gracias por tu pedido. Aquí tienes un resumen:\n\n");
-        bodyBuilder.append("Pedido ID: ").append(guardado.getId()).append("\n")
-                .append("Fecha entrega: ").append(guardado.getFechaEntrega()).append("\n")
-                .append("Dirección de entrega: ").append(guardado.getDireccionEntrega()).append("\n\n")
-                .append("Detalles:\n");
 
-        // Listar cada plato, cantidad y subtotal
-        List<DetallesPedidoDTO> detallesDTO = dto.getDetalles();
-        for (DetallesPedidoDTO detalleDTO : detallesDTO) {
+        // Construir un cuerpo HTML (puede adaptarse a texto plano si prefieres)
+        StringBuilder bodyBuilder = new StringBuilder();
+        bodyBuilder.append("<p>Hola ").append(usuario.getNombre()).append(",</p>");
+        bodyBuilder.append("<p>¡Gracias por tu pedido en <b>Tecocinamos</b>!</p>");
+        bodyBuilder.append("<p>Adjuntamos en este correo la factura correspondiente al pedido <b>#")
+                .append(guardado.getId()).append("</b>.</p>");
+        bodyBuilder.append("<p><b>Resumen:</b></p>");
+        bodyBuilder.append("<ul>");
+        for (DetallesPedidoDTO detalleDTO : dto.getDetalles()) {
             Plato plato = platoRepository.findById(detalleDTO.getPlatoId()).get();
             BigDecimal precioUnitario = plato.getPrecio();
-            BigDecimal descuento = detalleDTO.getDescuento() != null ? detalleDTO.getDescuento() : BigDecimal.ZERO;
-            BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(detalleDTO.getCantidadPlato()))
+            BigDecimal descuento = detalleDTO.getDescuento() != null
+                    ? detalleDTO.getDescuento() : BigDecimal.ZERO;
+            BigDecimal subtotal = precioUnitario
+                    .multiply(BigDecimal.valueOf(detalleDTO.getCantidadPlato()))
                     .subtract(descuento);
 
-            bodyBuilder.append("- ").append(plato.getNombrePlato())
-                    .append(" x ").append(detalleDTO.getCantidadPlato())
-                    .append(" @ ").append(precioUnitario).append(" €")
-                    .append(detalleDTO.getDescuento() != null && detalleDTO.getDescuento().compareTo(BigDecimal.ZERO) > 0
+            bodyBuilder.append("<li>")
+                    .append(detalleDTO.getCantidadPlato())
+                    .append(" × ").append(plato.getNombrePlato())
+                    .append(" (").append(precioUnitario).append(" €)")
+                    .append(descuento.compareTo(BigDecimal.ZERO) > 0
                             ? " (Descuento: " + descuento + " €)" : "")
-                    .append(" => Subtotal: ").append(subtotal).append(" €\n");
+                    .append(" – Subtotal: ").append(subtotal.setScale(2)).append(" €")
+                    .append("</li>");
         }
-        bodyBuilder.append("\nTotal del pedido: ").append(total).append(" €\n\n");
-        bodyBuilder.append("Un saludo,\nEl equipo de Tecocinamos");
+        bodyBuilder.append("</ul>");
+        bodyBuilder.append("<p><b>Total:</b> ").append(total.setScale(2)).append(" €</p>");
+        bodyBuilder.append("<p>En breve nos pondremos en contacto para coordinar la entrega.</p>");
+        bodyBuilder.append("<br><p>Un saludo,<br>El equipo de Tecocinamos</p>");
 
-        mailService.sendPlainTextEmail(to, subject, bodyBuilder.toString());
 
-        return mapToResponseDTO(guardado);
+        String filename = "factura_pedido_" + guardado.getId() + ".pdf";
+        mailService.sendEmailWithAttachment(
+                to,
+                subject,
+                bodyBuilder.toString(),
+                filename,
+                pdfBytes
+        );
+
+        // 8) Devolver el DTO con los datos del pedido
+        return mapToResponseDTO(pedidoConDetalles);
     }
 
     @Override

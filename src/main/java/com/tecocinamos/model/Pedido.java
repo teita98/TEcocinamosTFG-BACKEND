@@ -42,7 +42,7 @@ public class Pedido {
     private LocalDateTime fechaActualizacion;
 
     @Builder.Default
-    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<DetallesPedido> detalles = new ArrayList<>();
 
     @Builder.Default
