@@ -20,8 +20,8 @@ INSERT INTO rol (nombre_rol) VALUES
 -- ------------------------------------------------
 INSERT INTO usuario (rol_id, nombre, email, contrasena, telefono, direccion, eliminado)
 VALUES
-(1, 'AdminEj', 'admin@tecocinamos.com', '$2b$12$1KYKRXdG.reW3EbiXjET2.VAo4TYqJ1Huxz2ubpaNoECdIAYTYYfi', '+34 600000001', 'Calle Falsa 123', FALSE), -- contraseña real: Admin123!
-(2, 'Pedro', 'pedro@cliente.com', '$2b$12$UP20tiSrr.wZorFo00crNe1XkY7l6RDyTh7gAsBEeoTkAvHo.AAeS', '+34 600000002', 'Av. Siempre Viva 742', FALSE); -- contraseña real: User123!
+(1, 'Teresa', 'tcharlomillan@gmail.com', '$2b$12$1KYKRXdG.reW3EbiXjET2.VAo4TYqJ1Huxz2ubpaNoECdIAYTYYfi', '600000001', 'Calle sevilla 123', FALSE), -- contraseña real: Admin123!
+(2, 'Tere', 'teitacharlo98@gmail.com', '$2b$12$UP20tiSrr.wZorFo00crNe1XkY7l6RDyTh7gAsBEeoTkAvHo.AAeS', '600000002', 'Av. finlandia 742', FALSE); -- contraseña real: User123!
 
 -- ------------------------------------------------
 -- 3) ESTADOS DE PEDIDO
