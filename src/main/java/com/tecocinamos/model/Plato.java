@@ -30,6 +30,8 @@ public class Plato {
     @Column(name = "precio", nullable = false)
     private BigDecimal precio;
 
+    // Añadimos @Builder.Default para que stock=0 sea usado por el builder
+    @Builder.Default
     @Column(name = "stock")
     private Integer stock = 0;
 
@@ -46,15 +48,12 @@ public class Plato {
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    @OneToMany(mappedBy = "plato")
+    @OneToMany(mappedBy = "plato", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallesPedido> detallesPedidos;
 
-    @OneToMany(mappedBy = "plato")
-    private List<PlatoAlergeno> alergenos = new ArrayList<>();
-
+    // Añadimos @Builder.Default para que sea usado por el builder
+    @Builder.Default
     @OneToMany(mappedBy = "plato", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlatoIngrediente> ingredientes = new ArrayList<>();
-
-    // Getters y setters
 }
 

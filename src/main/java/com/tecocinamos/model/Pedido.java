@@ -1,15 +1,12 @@
 package com.tecocinamos.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -19,7 +16,6 @@ import java.util.List;
 @Entity
 @Table(name = "pedido")
 public class Pedido {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pedido_id")
@@ -45,9 +41,11 @@ public class Pedido {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
+    @Builder.Default
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallesPedido> detalles = new ArrayList<>();
 
-    // Getters y setters
+    @Builder.Default
+    @Column(name = "total", precision = 10, scale = 2)
+    private BigDecimal total = BigDecimal.ZERO;
 }
-

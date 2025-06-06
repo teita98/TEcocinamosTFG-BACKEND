@@ -18,17 +18,17 @@ public class LogAuditoriaServiceImpl implements LogAuditoriaServiceI {
 
     @Override
     public List<LogAuditoriaDTO> listarLogs() {
-        return logAuditoriaRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
-    private LogAuditoriaDTO mapToDTO(LogAuditoria log) {
-        LogAuditoriaDTO dto = new LogAuditoriaDTO();
-        dto.setEntidad(log.getEntidad());
-        dto.setCampoModificado(log.getCampoModificado());
-        dto.setValorAnterior(log.getValorAnterior());
-        dto.setValorNuevo(log.getValorNuevo());
-        dto.setAccion(log.getAccion());
-        dto.setFecha(log.getFecha());
-        dto.setEmailAdmin(log.getUsuarioAdmin().getEmail());
-        return dto;
+        return logAuditoriaRepository.findAll().stream()
+                .map(log -> LogAuditoriaDTO.builder()
+                        .id(log.getId())
+                        .entidad(log.getEntidad())
+                        .campoModificado(log.getCampoModificado())
+                        .valorAnterior(log.getValorAnterior())
+                        .valorNuevo(log.getValorNuevo())
+                        .accion(log.getAccion())
+                        .fecha(log.getFecha())
+                        .emailAdmin(log.getUsuarioAdmin().getEmail())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

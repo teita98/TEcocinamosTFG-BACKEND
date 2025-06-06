@@ -13,15 +13,10 @@ import java.util.List;
 @Entity
 @Table(name = "usuario")
 public class Usuario {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "usuario_id")
     private Integer id;
-
-    @ManyToOne
-    @JoinColumn(name = "rol_id", nullable = false)
-    private Rol rol;
 
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
@@ -35,17 +30,23 @@ public class Usuario {
     @Column(name = "telefono", length = 20)
     private String telefono;
 
+    @Column(name = "direccion", length = 200)
+    private String direccion;
+
+    @Builder.Default
     @Column(name = "eliminado")
     private Boolean eliminado = false;
 
     @Column(name = "fecha_eliminado")
     private LocalDate fechaEliminado;
 
+    @ManyToOne
+    @JoinColumn(name = "rol_id", nullable = false)
+    private Rol rol;
+
     @OneToMany(mappedBy = "usuario")
     private List<Pedido> pedidos;
 
     @OneToMany(mappedBy = "usuarioAdmin")
     private List<LogAuditoria> logs;
-
-    // Getters y setters
 }

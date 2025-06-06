@@ -2,6 +2,8 @@ package com.tecocinamos.service.impl;
 
 import com.tecocinamos.dto.EstadoRequestDTO;
 import com.tecocinamos.dto.EstadoResponseDTO;
+import com.tecocinamos.exception.BadRequestException;
+import com.tecocinamos.exception.NotFoundException;
 import com.tecocinamos.model.Estado;
 import com.tecocinamos.repository.EstadoRepository;
 import com.tecocinamos.service.EstadoServiceI;
@@ -20,34 +22,34 @@ public class EstadoServiceImpl implements EstadoServiceI {
 
     @Override
     public EstadoResponseDTO crearEstado(EstadoRequestDTO dto) {
+        if (estadoRepository.existsByNombreIgnoreCase(dto.getNombre())) {
+            throw new BadRequestException("Ya existe un estado con ese nombre");
+        }
         Estado estado = Estado.builder()
                 .nombre(dto.getNombre())
                 .build();
-
         Estado guardado = estadoRepository.save(estado);
-        return mapToDTO(guardado);
+        return EstadoResponseDTO.builder()
+                .id(guardado.getId())
+                .nombre(guardado.getNombre())
+                .build();
     }
 
     @Override
     public List<EstadoResponseDTO> listarEstados() {
-        return estadoRepository.findAll()
-                .stream()
-                .map(this::mapToDTO)
+        return estadoRepository.findAll().stream()
+                .map(e -> EstadoResponseDTO.builder()
+                        .id(e.getId())
+                        .nombre(e.getNombre())
+                        .build())
                 .collect(Collectors.toList());
     }
 
     @Override
     public void eliminarEstado(Integer id) {
         if (!estadoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Estado no encontrado");
+            throw new NotFoundException("Estado no encontrado con ID " + id);
         }
         estadoRepository.deleteById(id);
-    }
-
-    private EstadoResponseDTO mapToDTO(Estado estado) {
-        return EstadoResponseDTO.builder()
-                .id(estado.getId())
-                .nombre(estado.getNombre())
-                .build();
     }
 }

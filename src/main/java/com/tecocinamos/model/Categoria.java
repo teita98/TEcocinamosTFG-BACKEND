@@ -24,8 +24,6 @@ public class Categoria {
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
 
-    @OneToMany(mappedBy = "categoria")
+    @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL)
     private List<Plato> platos;
-
-    // Getters y setters
 }

@@ -1,9 +1,7 @@
 package com.tecocinamos.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -20,5 +18,4 @@ public class LogAuditoriaDTO {
     private String accion;
     private LocalDateTime fecha;
     private String emailAdmin;
-
 }

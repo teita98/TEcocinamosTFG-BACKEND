@@ -1,6 +1,8 @@
 package com.tecocinamos.service.impl;
 
 import com.tecocinamos.dto.AlergenoResponseDTO;
+import com.tecocinamos.exception.BadRequestException;
+import com.tecocinamos.exception.NotFoundException;
 import com.tecocinamos.model.Alergeno;
 import com.tecocinamos.repository.AlergenoRepository;
 import com.tecocinamos.service.AlergenoServiceI;
@@ -19,30 +21,32 @@ public class AlergenoServiceImpl implements AlergenoServiceI {
 
     @Override
     public AlergenoResponseDTO crear(String nombre) {
+        if (alergenoRepository.existsByNombreIgnoreCase(nombre)) {
+            throw new BadRequestException("Ya existe un alérgeno con ese nombre");
+        }
         Alergeno alergeno = Alergeno.builder().nombre(nombre).build();
-        return map(alergenoRepository.save(alergeno));
+        Alergeno guardado = alergenoRepository.save(alergeno);
+        return AlergenoResponseDTO.builder()
+                .id(guardado.getId())
+                .nombre(guardado.getNombre())
+                .build();
     }
 
     @Override
     public List<AlergenoResponseDTO> listar() {
-        return alergenoRepository.findAll()
-                .stream()
-                .map(this::map)
+        return alergenoRepository.findAll().stream()
+                .map(a -> AlergenoResponseDTO.builder()
+                        .id(a.getId())
+                        .nombre(a.getNombre())
+                        .build())
                 .collect(Collectors.toList());
     }
 
     @Override
     public void eliminar(Integer id) {
         if (!alergenoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Alergeno no encontrado");
+            throw new NotFoundException("Alérgeno no encontrado con ID " + id);
         }
         alergenoRepository.deleteById(id);
-    }
-
-    private AlergenoResponseDTO map(Alergeno a) {
-        return AlergenoResponseDTO.builder()
-                .id(a.getId())
-                .nombre(a.getNombre())
-                .build();
     }
 }

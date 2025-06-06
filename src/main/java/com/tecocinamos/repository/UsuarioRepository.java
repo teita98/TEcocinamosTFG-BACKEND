@@ -11,13 +11,8 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     Optional<Usuario> findByEmail(String email);
-
-    // Buscar usuarios activos cuyo nombre empiece por 'nombre' (ignorando mayúsculas)
     List<Usuario> findByNombreStartingWithIgnoreCaseAndEliminadoFalse(String nombre);
-
-    // Buscar usuario activo exacto por nombre
     Optional<Usuario> findByNombreIgnoreCaseAndEliminadoFalse(String nombre);
-
-    // Buscar usuario activo por ID
     Optional<Usuario> findByIdAndEliminadoFalse(Integer id);
+    boolean existsByEmail(String email);
 }

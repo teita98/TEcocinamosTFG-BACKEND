@@ -1,9 +1,6 @@
 package com.tecocinamos.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -12,6 +9,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class IngredienteDetalleDTO {
+    private Integer ingredienteId;
     private String nombreIngrediente;
     private BigDecimal cantidadUsada;
     private String unidad;

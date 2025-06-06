@@ -26,6 +26,4 @@ public class Estado {
 
     @OneToMany(mappedBy = "estado")
     private List<Pedido> pedidos;
-
-    // Getters y setters
 }

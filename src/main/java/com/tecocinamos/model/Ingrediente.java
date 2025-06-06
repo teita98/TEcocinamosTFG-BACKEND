@@ -28,10 +28,6 @@ public class Ingrediente {
     @Column(name = "categoria", length = 50)
     private String categoria;
 
-    @ManyToOne
-    @JoinColumn(name = "proveedor_id")
-    private Proveedor proveedor;
-
     @Column(name = "cantidad_envase", nullable = false)
     private BigDecimal cantidadEnvase;
 
@@ -41,14 +37,23 @@ public class Ingrediente {
     @Column(name = "precio_envase", nullable = false)
     private BigDecimal precioEnvase;
 
-    @Column(name = "precio_unitario")
+    @Column(name = "precio_unitario", nullable = false)
     private BigDecimal precioUnitario;
 
     @Column(name = "unidad", length = 20)
     private String unidad;
 
-    @OneToMany(mappedBy = "ingrediente")
+    @Builder.Default
+    @Column(name = "stock")
+    private Integer stock = 0;
+
+    @ManyToOne
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
+
+    @OneToMany(mappedBy = "ingrediente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlatoIngrediente> platos;
 
-    // Getters y setters
+    @OneToMany(mappedBy = "ingrediente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<IngredienteAlergeno> alergenos;
 }

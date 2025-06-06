@@ -24,8 +24,6 @@ public class Alergeno {
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
 
-    @OneToMany(mappedBy = "alergeno")
-    private List<PlatoAlergeno> platos;
-
-    // Getters y setters
+    @OneToMany(mappedBy = "alergeno", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<IngredienteAlergeno> ingredientes;
 }

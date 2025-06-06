@@ -1,15 +1,17 @@
 package com.tecocinamos.service.impl;
 
 import com.tecocinamos.dto.*;
+import com.tecocinamos.exception.BadRequestException;
+import com.tecocinamos.exception.NotFoundException;
 import com.tecocinamos.model.*;
 import com.tecocinamos.repository.*;
 import com.tecocinamos.service.PlatoServiceI;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,15 +30,12 @@ public class PlatoServiceImpl implements PlatoServiceI {
     private PlatoIngredienteRepository platoIngredienteRepository;
 
     @Autowired
-    private AlergenoRepository alergenoRepository;
-
-    @Autowired
-    private PlatoAlergenoRepository platoAlergenoRepository;
+    private IngredienteAlergenoRepository ingredienteAlergenoRepository;
 
     @Override
     public PlatoResponseDTO crearPlato(PlatoRequestDTO dto) {
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-                .orElseThrow(() -> new EntityNotFoundException("Categoría no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada con ID " + dto.getCategoriaId()));
 
         Plato plato = new Plato();
         plato.setNombrePlato(dto.getNombrePlato());
@@ -52,9 +51,15 @@ public class PlatoServiceImpl implements PlatoServiceI {
 
         // Guardar ingredientes
         if (dto.getIngredientesUsados() != null) {
-            for (var usado : dto.getIngredientesUsados()) {
+            for (IngredienteDetalleDTO usado : dto.getIngredientesUsados()) {
                 Ingrediente ing = ingredienteRepository.findById(usado.getIngredienteId())
-                        .orElseThrow(() -> new EntityNotFoundException("Ingrediente no encontrado"));
+                        .orElseThrow(() -> new NotFoundException("Ingrediente no encontrado con ID " + usado.getIngredienteId()));
+                if (ing.getStock() < usado.getCantidadUsada().intValue()) {
+                    throw new BadRequestException("No hay suficiente stock de ingrediente: " + ing.getNombre());
+                }
+                // Reducir stock de ingrediente
+                ing.setStock(ing.getStock() - usado.getCantidadUsada().intValue());
+                ingredienteRepository.save(ing);
 
                 PlatoIngrediente pi = PlatoIngrediente.builder()
                         .plato(guardado)
@@ -62,39 +67,20 @@ public class PlatoServiceImpl implements PlatoServiceI {
                         .cantidadUsada(usado.getCantidadUsada())
                         .unidad(usado.getUnidad())
                         .build();
-
                 platoIngredienteRepository.save(pi);
             }
         }
 
-        // Guardar alérgenos
-        if (dto.getAlergenosIds() != null) {
-            for (Integer idAlergeno : dto.getAlergenosIds()) {
-                Alergeno alergeno = alergenoRepository.findById(idAlergeno)
-                        .orElseThrow(() -> new EntityNotFoundException("Alergeno no encontrado"));
-
-                PlatoAlergeno pa = PlatoAlergeno.builder()
-                        .plato(guardado)
-                        .alergeno(alergeno)
-                        .build();
-
-                platoAlergenoRepository.save(pa);
-            }
-        }
-
-
         return convertirAResponse(guardado);
     }
-
-
 
     @Override
     public PlatoResponseDTO actualizarPlato(Integer id, PlatoRequestDTO dto) {
         Plato plato = platoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Plato no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Plato no encontrado con ID " + id));
 
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-                .orElseThrow(() -> new EntityNotFoundException("Categoría no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada con ID " + dto.getCategoriaId()));
 
         plato.setNombrePlato(dto.getNombrePlato());
         plato.setCantidad(dto.getCantidad());
@@ -105,15 +91,28 @@ public class PlatoServiceImpl implements PlatoServiceI {
         plato.setCategoria(categoria);
         plato.setFechaActualizacion(LocalDateTime.now());
 
+        // Eliminar ingredientes anteriores y restaurar stock de ingrediente previo
+        List<PlatoIngrediente> antiguos = platoIngredienteRepository.findByPlato(plato);
+        for (PlatoIngrediente pi : antiguos) {
+            Ingrediente ingPrev = pi.getIngrediente();
+            ingPrev.setStock(ingPrev.getStock() + pi.getCantidadUsada().intValue());
+            ingredienteRepository.save(ingPrev);
+        }
+        platoIngredienteRepository.deleteAll(antiguos);
+
         Plato actualizado = platoRepository.save(plato);
 
-        // Actualizar ingredientes: eliminar anteriores y guardar nuevos
-        platoIngredienteRepository.deleteByPlato(actualizado);
-
+        // Guardar nuevos ingredientes
         if (dto.getIngredientesUsados() != null) {
-            for (var usado : dto.getIngredientesUsados()) {
+            for (IngredienteDetalleDTO usado : dto.getIngredientesUsados()) {
                 Ingrediente ing = ingredienteRepository.findById(usado.getIngredienteId())
-                        .orElseThrow(() -> new EntityNotFoundException("Ingrediente no encontrado"));
+                        .orElseThrow(() -> new NotFoundException("Ingrediente no encontrado con ID " + usado.getIngredienteId()));
+                if (ing.getStock() < usado.getCantidadUsada().intValue()) {
+                    throw new BadRequestException("No hay suficiente stock de ingrediente: " + ing.getNombre());
+                }
+                // Reducir stock de ingrediente
+                ing.setStock(ing.getStock() - usado.getCantidadUsada().intValue());
+                ingredienteRepository.save(ing);
 
                 PlatoIngrediente pi = PlatoIngrediente.builder()
                         .plato(actualizado)
@@ -121,25 +120,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
                         .cantidadUsada(usado.getCantidadUsada())
                         .unidad(usado.getUnidad())
                         .build();
-
                 platoIngredienteRepository.save(pi);
-            }
-        }
-
-        // Actualizar alérgenos: eliminar anteriores y guardar nuevos
-        platoAlergenoRepository.deleteByPlato(actualizado);
-
-        if (dto.getAlergenosIds() != null) {
-            for (Integer idAlergeno : dto.getAlergenosIds()) {
-                Alergeno alergeno = alergenoRepository.findById(idAlergeno)
-                        .orElseThrow(() -> new EntityNotFoundException("Alergeno no encontrado"));
-
-                PlatoAlergeno pa = PlatoAlergeno.builder()
-                        .plato(actualizado)
-                        .alergeno(alergeno)
-                        .build();
-
-                platoAlergenoRepository.save(pa);
             }
         }
 
@@ -147,13 +128,55 @@ public class PlatoServiceImpl implements PlatoServiceI {
     }
 
     @Override
-    public List<IngredienteUsadoDTO> obtenerIngredientesPorPlato(Integer platoId) {
-        Plato plato = platoRepository.findById(platoId)
-                .orElseThrow(() -> new EntityNotFoundException("Plato no encontrado"));
+    public void eliminarPlato(Integer id) {
+        if (!platoRepository.existsById(id)) {
+            throw new NotFoundException("Plato no encontrado con ID " + id);
+        }
+        // Antes de eliminar, restaurar stock de ingredientes
+        Plato plato = platoRepository.findById(id).get();
+        List<PlatoIngrediente> usados = platoIngredienteRepository.findByPlato(plato);
+        for (PlatoIngrediente pi : usados) {
+            Ingrediente ing = pi.getIngrediente();
+            ing.setStock(ing.getStock() + pi.getCantidadUsada().intValue());
+            ingredienteRepository.save(ing);
+        }
+        platoIngredienteRepository.deleteAll(usados);
+        platoRepository.deleteById(id);
+    }
 
+    @Override
+    public PlatoResponseDTO obtenerPlatoPorId(Integer id) {
+        Plato plato = platoRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Plato no encontrado con ID " + id));
+        return convertirAResponse(plato);
+    }
+
+    @Override
+    public Page<PlatoListDTO> listarPlatos(Pageable pageable) {
+        return platoRepository.findAll(pageable)
+                .map(this::convertirAListDTO);
+    }
+
+    @Override
+    public Page<PlatoListDTO> buscarPorCategoria(String categoria, Pageable pageable) {
+        return platoRepository.findByCategoriaNombreIgnoreCase(categoria, pageable)
+                .map(this::convertirAListDTO);
+    }
+
+    @Override
+    public Page<PlatoListDTO> buscarPorNombre(String nombre, Pageable pageable) {
+        return platoRepository.findByNombrePlatoContainingIgnoreCase(nombre, pageable)
+                .map(this::convertirAListDTO);
+    }
+
+    @Override
+    public List<IngredienteDetalleDTO> obtenerIngredientesPorPlato(Integer platoId) {
+        Plato plato = platoRepository.findById(platoId)
+                .orElseThrow(() -> new NotFoundException("Plato no encontrado con ID " + platoId));
         return platoIngredienteRepository.findByPlato(plato).stream()
-                .map(pi -> IngredienteUsadoDTO.builder()
-                        .nombre(pi.getIngrediente().getNombre())
+                .map(pi -> IngredienteDetalleDTO.builder()
+                        .ingredienteId(pi.getIngrediente().getId())
+                        .nombreIngrediente(pi.getIngrediente().getNombre())
                         .cantidadUsada(pi.getCantidadUsada())
                         .unidad(pi.getUnidad())
                         .build())
@@ -163,61 +186,56 @@ public class PlatoServiceImpl implements PlatoServiceI {
     @Override
     public List<AlergenoResponseDTO> obtenerAlergenosPorPlato(Integer platoId) {
         Plato plato = platoRepository.findById(platoId)
-                .orElseThrow(() -> new EntityNotFoundException("Plato no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Plato no encontrado con ID " + platoId));
 
-        return platoAlergenoRepository.findByPlato(plato).stream()
-                .map(pa -> AlergenoResponseDTO.builder()
-                        .id(pa.getAlergeno().getId())
-                        .nombre(pa.getAlergeno().getNombre())
+        // Recorre cada ingrediente del plato y recopila sus alérgenos
+        Set<Alergeno> alSet = new HashSet<>();
+        List<PlatoIngrediente> usados = platoIngredienteRepository.findByPlato(plato);
+        for (PlatoIngrediente pi : usados) {
+            List<IngredienteAlergeno> ingsAll = ingredienteAlergenoRepository.findByIngredienteId(pi.getIngrediente().getId());
+            for (IngredienteAlergeno ia : ingsAll) {
+                alSet.add(ia.getAlergeno());
+            }
+        }
+        // Convertir set a lista de DTOs
+        return alSet.stream()
+                .map(a -> AlergenoResponseDTO.builder()
+                        .id(a.getId())
+                        .nombre(a.getNombre())
                         .build())
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public void eliminarPlato(Integer id) {
-        if (!platoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Plato no encontrado");
-        }
-        platoRepository.deleteById(id);
+    private PlatoListDTO convertirAListDTO(Plato plato) {
+        return PlatoListDTO.builder()
+                .id(plato.getId())
+                .nombrePlato(plato.getNombrePlato())
+                .precio(plato.getPrecio())
+                .categoria(plato.getCategoria().getNombre())
+                .stock(plato.getStock())
+                .build();
     }
-
-    @Override
-    public PlatoResponseDTO obtenerPlatoPorId(Integer id) {
-        Plato plato = platoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Plato no encontrado"));
-        return convertirAResponse(plato);
-    }
-
-    @Override
-    public List<PlatoListDTO> listarPlatos() {
-        return platoRepository.findAll().stream()
-                .map(this::convertirAListDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<PlatoListDTO> buscarPorNombre(String nombre) {
-        return platoRepository.findByNombrePlatoContainingIgnoreCase(nombre).stream()
-                .map(this::convertirAListDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<PlatoListDTO> buscarPorCategoria(String categoria) {
-        return platoRepository.findByCategoriaNombreIgnoreCase(categoria).stream()
-                .map(this::convertirAListDTO)
-                .collect(Collectors.toList());
-    }
-
-    // Métodos auxiliares
 
     private PlatoResponseDTO convertirAResponse(Plato plato) {
-        List<IngredienteDetalleDTO> ingredientes = plato.getIngredientes().stream()
+        List<IngredienteDetalleDTO> ingredientes = platoIngredienteRepository.findByPlato(plato).stream()
                 .map(pi -> IngredienteDetalleDTO.builder()
+                        .ingredienteId(pi.getIngrediente().getId())
                         .nombreIngrediente(pi.getIngrediente().getNombre())
                         .cantidadUsada(pi.getCantidadUsada())
                         .unidad(pi.getUnidad())
                         .build())
+                .collect(Collectors.toList());
+
+        // Generar lista deduplicada de alérgenos
+        Set<Alergeno> alSet = new HashSet<>();
+        for (PlatoIngrediente pi : plato.getIngredientes()) {
+            List<IngredienteAlergeno> ingsAll = ingredienteAlergenoRepository.findByIngredienteId(pi.getIngrediente().getId());
+            for (IngredienteAlergeno ia : ingsAll) {
+                alSet.add(ia.getAlergeno());
+            }
+        }
+        List<AlergenoResponseDTO> alergenos = alSet.stream()
+                .map(a -> AlergenoResponseDTO.builder().id(a.getId()).nombre(a.getNombre()).build())
                 .collect(Collectors.toList());
 
         return PlatoResponseDTO.builder()
@@ -230,16 +248,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
                 .recomendaciones(plato.getRecomendaciones())
                 .categoriaNombre(plato.getCategoria().getNombre())
                 .ingredientes(ingredientes)
-                .build();
-    }
-
-
-    private PlatoListDTO convertirAListDTO(Plato plato) {
-        return PlatoListDTO.builder()
-                .id(plato.getId())
-                .nombrePlato(plato.getNombrePlato())
-                .precio(plato.getPrecio())
-                .categoria(plato.getCategoria().getNombre())
+                .alergenos(alergenos)
                 .build();
     }
 }

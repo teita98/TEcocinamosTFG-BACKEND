@@ -8,6 +8,4 @@ import java.util.List;
 
 @Repository
 public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Integer> {
-    List<LogAuditoria> findByEntidadIgnoreCase(String entidad);
-    List<LogAuditoria> findByUsuarioAdminId(Integer usuarioId);
 }

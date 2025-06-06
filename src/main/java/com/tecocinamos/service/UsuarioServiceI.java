@@ -12,10 +12,9 @@ public interface UsuarioServiceI {
     UsuarioPublicDTO verPerfilPublico(String nombre);
     UsuarioResponseDTO obtenerUsuarioPorId(Integer id);
     void eliminarUsuario(Integer id);
-
     void cambiarPassword(CambiarPasswordDTO dto);
     UsuarioResponseDTO actualizarPerfil(ActualizarPerfilDTO dto);
     List<UsuarioResponseDTO> listarTodosLosUsuarios();
-
+    UsuarioResponseDTO asignarRol(Integer usuarioId, Integer rolId);
 
 }

@@ -1,10 +1,7 @@
 package com.tecocinamos.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -15,7 +12,6 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "plato_ingrediente")
 public class PlatoIngrediente {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -34,6 +30,4 @@ public class PlatoIngrediente {
 
     @Column(name = "unidad", length = 20)
     private String unidad;
-
-    // Getters y setters
 }

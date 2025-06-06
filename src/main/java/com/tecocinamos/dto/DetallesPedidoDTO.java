@@ -1,9 +1,7 @@
 package com.tecocinamos.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -12,8 +10,13 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class DetallesPedidoDTO {
+    @NotNull(message = "El platoId es obligatorio")
     private Integer platoId;
-    private String nombrePlato;
+
+    @NotNull(message = "La cantidad de platos es obligatoria")
+    @Min(value = 1, message = "La cantidad debe ser al menos 1")
     private Integer cantidadPlato;
-    private BigDecimal descuento; // puede ser null o 0
+
+    @DecimalMin(value = "0.0", message = "El descuento no puede ser negativo")
+    private BigDecimal descuento; // opcional
 }

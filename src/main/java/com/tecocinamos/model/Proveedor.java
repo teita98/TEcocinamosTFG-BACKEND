@@ -35,6 +35,4 @@ public class Proveedor {
 
     @OneToMany(mappedBy = "proveedor")
     private List<Ingrediente> ingredientes;
-
-    // Getters y setters
 }

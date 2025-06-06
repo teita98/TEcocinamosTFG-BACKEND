@@ -3,11 +3,11 @@ package com.tecocinamos.dto;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class PlatoResponseDTO {
     private Integer id;
@@ -18,7 +18,6 @@ public class PlatoResponseDTO {
     private String preparacionCasa;
     private String recomendaciones;
     private String categoriaNombre;
-
     private List<IngredienteDetalleDTO> ingredientes;
+    private List<AlergenoResponseDTO> alergenos; // lista deduplicada de alérgenos
 }
-

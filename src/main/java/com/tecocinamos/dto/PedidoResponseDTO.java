@@ -1,13 +1,14 @@
 package com.tecocinamos.dto;
+import lombok.*;
 
-import lombok.Builder;
-import lombok.Data;
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class PedidoResponseDTO {
     private Integer id;
@@ -17,6 +18,7 @@ public class PedidoResponseDTO {
     private LocalDate fechaCreado;
     private LocalDate fechaEntrega;
     private String direccionEntrega;
+    private BigDecimal total;
     private LocalDateTime fechaActualizacion;
     private List<DetallesPedidoDTO> detalles;
 }

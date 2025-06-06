@@ -1,5 +1,6 @@
 package com.tecocinamos.dto;
 
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 @Data
@@ -7,5 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CategoriaRequestDTO {
+    @NotBlank(message = "El nombre de la categoría es obligatorio")
     private String nombre;
 }

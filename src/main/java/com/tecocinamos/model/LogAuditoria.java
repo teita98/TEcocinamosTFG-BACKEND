@@ -35,16 +35,14 @@ public class LogAuditoria {
     @Column(name = "valor_nuevo", length = 50)
     private String valorNuevo;
 
-    @Column(name = "fecha")
-    private LocalDateTime fecha;
-
     @Column(name = "accion", length = 100)
     private String accion;
+
+    @Column(name = "fecha")
+    private LocalDateTime fecha;
 
     @ManyToOne
     @JoinColumn(name = "usuario_admin_id")
     private Usuario usuarioAdmin;
-
-    // Getters y setters
 }
 

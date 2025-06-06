@@ -8,6 +8,4 @@ import java.util.List;
 
 @Repository
 public interface DetallesPedidoRepository extends JpaRepository<DetallesPedido, Integer> {
-    List<DetallesPedido> findByPedidoId(Integer pedidoId); // Ver platos de un pedido
-
 }

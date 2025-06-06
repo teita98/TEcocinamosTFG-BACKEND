@@ -1,10 +1,7 @@
 package com.tecocinamos.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -15,7 +12,6 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "detalles_pedido")
 public class DetallesPedido {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "detalles_pedido_id")
@@ -34,6 +30,4 @@ public class DetallesPedido {
 
     @Column(name = "descuento")
     private BigDecimal descuento;
-
-    // Getters y setters
 }

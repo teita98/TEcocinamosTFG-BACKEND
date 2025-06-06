@@ -1,6 +1,8 @@
 package com.tecocinamos.service.impl;
 
 import com.tecocinamos.dto.*;
+import com.tecocinamos.exception.BadRequestException;
+import com.tecocinamos.exception.NotFoundException;
 import com.tecocinamos.model.Rol;
 import com.tecocinamos.model.Usuario;
 import com.tecocinamos.repository.RolRepository;
@@ -8,8 +10,10 @@ import com.tecocinamos.repository.UsuarioRepository;
 import com.tecocinamos.security.CustomUserDetailsService;
 import com.tecocinamos.security.JwtUtils;
 import com.tecocinamos.service.UsuarioServiceI;
+import com.tecocinamos.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioServiceI {
@@ -29,166 +34,173 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
     private RolRepository rolRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-
-    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private CustomUserDetailsService userDetailsService;
+    private com.tecocinamos.security.CustomUserDetailsService userDetailsService;
 
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public UsuarioResponseDTO registrarUsuario(UsuarioRegisterDTO dto) {
-        if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new RuntimeException("Ya existe un usuario con ese email");
+        if (usuarioRepository.existsByEmail(dto.getEmail())) {
+            throw new BadRequestException("Ya existe un usuario con ese email");
         }
-
-        Usuario usuario = new Usuario();
-        usuario.setNombre(dto.getNombre());
-        usuario.setEmail(dto.getEmail());
-        usuario.setContrasena(passwordEncoder.encode(dto.getContrasena()));
-        usuario.setTelefono(dto.getTelefono());
-
-        // Por defecto asignamos el rol CLIENTE
-        Rol rol = rolRepository.findById(2)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
-        usuario.setRol(rol);
-
+        Rol rol = rolRepository.findByNombreRolIgnoreCase("CLIENTE")
+                .orElseThrow(() -> new NotFoundException("Rol CLIENTE no encontrado"));
+        Usuario usuario = Usuario.builder()
+                .nombre(dto.getNombre())
+                .email(dto.getEmail())
+                .contrasena(passwordEncoder.encode(dto.getContrasena()))
+                .telefono(dto.getTelefono())
+                .rol(rol)
+                .eliminado(false)
+                .build();
         Usuario guardado = usuarioRepository.save(usuario);
-
-        System.out.println("Usuario registrado: " + usuario.getEmail());
-
-        return convertirAResponseDTO(guardado);
+        return UsuarioResponseDTO.builder()
+                .id(guardado.getId())
+                .nombre(guardado.getNombre())
+                .email(guardado.getEmail())
+                .telefono(guardado.getTelefono())
+                .rol(guardado.getRol().getNombreRol())
+                .build();
     }
 
     @Override
     public AuthResponseDTO login(UsuarioLoginDTO dto) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getContrasena())
-        );
-
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getContrasena())
+            );
+        } catch (BadCredentialsException ex) {
+            throw new BadRequestException("Credenciales inválidas");
+        }
         UserDetails user = userDetailsService.loadUserByUsername(dto.getEmail());
         String token = jwtUtils.generateToken(user);
-
-        System.out.println("Login exitoso para: " + dto.getEmail());
-
         return new AuthResponseDTO(token);
     }
 
-
     @Override
     public UsuarioResponseDTO obtenerPerfilPropio() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();  // El email viene del token
-
+        String email = SecurityUtil.getAuthenticatedEmail();
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        System.out.println("Perfil consultado para: " + email);
-
-        return convertirAResponseDTO(usuario);
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        return UsuarioResponseDTO.builder()
+                .id(usuario.getId())
+                .nombre(usuario.getNombre())
+                .email(usuario.getEmail())
+                .telefono(usuario.getTelefono())
+                .rol(usuario.getRol().getNombreRol())
+                .build();
     }
 
     @Override
     public List<UsuarioResponseDTO> buscarUsuariosPorNombre(String nombre) {
+        // Solo ADMIN puede invocar este método (en controlador se protegerá)
         List<Usuario> usuarios = usuarioRepository.findByNombreStartingWithIgnoreCaseAndEliminadoFalse(nombre);
-
-        System.out.println("Buscando usuarios que empiezan por: " + nombre);
-
         return usuarios.stream()
-                .map(this::convertirAResponseDTO)
-                .toList();
+                .map(u -> UsuarioResponseDTO.builder()
+                        .id(u.getId())
+                        .nombre(u.getNombre())
+                        .email(u.getEmail())
+                        .telefono(u.getTelefono())
+                        .rol(u.getRol().getNombreRol())
+                        .build())
+                .collect(Collectors.toList());
     }
-
 
     @Override
     public UsuarioPublicDTO verPerfilPublico(String nombre) {
         Usuario usuario = usuarioRepository.findByNombreIgnoreCaseAndEliminadoFalse(nombre)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        UsuarioPublicDTO dto = new UsuarioPublicDTO();
-        dto.setNombre(usuario.getNombre());
-        dto.setTelefono(usuario.getTelefono());
-
-        System.out.println("Buscando usuario: " + nombre);
-
-        return dto;
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        return new UsuarioPublicDTO(usuario.getNombre(), usuario.getTelefono());
     }
-
 
     @Override
     public UsuarioResponseDTO obtenerUsuarioPorId(Integer id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        System.out.println("Buscando usuario con id: " + id);
-
-        return convertirAResponseDTO(usuario);
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID " + id));
+        return UsuarioResponseDTO.builder()
+                .id(usuario.getId())
+                .nombre(usuario.getNombre())
+                .email(usuario.getEmail())
+                .telefono(usuario.getTelefono())
+                .rol(usuario.getRol().getNombreRol())
+                .build();
     }
 
     @Override
     public void eliminarUsuario(Integer id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID " + id));
         usuario.setEliminado(true);
         usuario.setFechaEliminado(java.time.LocalDate.now());
-
         usuarioRepository.save(usuario);
-
-        System.out.println("🗑Usuario marcado como eliminado: " + usuario.getEmail());
-
     }
 
     @Override
     public void cambiarPassword(CambiarPasswordDTO dto) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = SecurityUtil.getAuthenticatedEmail();
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(dto.getActual(), usuario.getContrasena())) {
-            throw new RuntimeException("La contraseña actual no es válida");
+            throw new BadRequestException("La contraseña actual no es válida");
         }
-
         usuario.setContrasena(passwordEncoder.encode(dto.getNueva()));
         usuarioRepository.save(usuario);
-
-        System.out.println("Contraseña actualizada para " + email);
     }
 
     @Override
     public UsuarioResponseDTO actualizarPerfil(ActualizarPerfilDTO dto) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = SecurityUtil.getAuthenticatedEmail();
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         usuario.setNombre(dto.getNombre());
         usuario.setTelefono(dto.getTelefono());
-
-        return convertirAResponseDTO(usuarioRepository.save(usuario));
+        Usuario actualizado = usuarioRepository.save(usuario);
+        return UsuarioResponseDTO.builder()
+                .id(actualizado.getId())
+                .nombre(actualizado.getNombre())
+                .email(actualizado.getEmail())
+                .telefono(actualizado.getTelefono())
+                .rol(actualizado.getRol().getNombreRol())
+                .build();
     }
 
     @Override
     public List<UsuarioResponseDTO> listarTodosLosUsuarios() {
         return usuarioRepository.findAll().stream()
-                .filter(usuario -> !usuario.getEliminado())
-                .map(this::convertirAResponseDTO)
-                .toList();
+                .filter(u -> !u.getEliminado())
+                .map(u -> UsuarioResponseDTO.builder()
+                        .id(u.getId())
+                        .nombre(u.getNombre())
+                        .email(u.getEmail())
+                        .telefono(u.getTelefono())
+                        .rol(u.getRol().getNombreRol())
+                        .build())
+                .collect(Collectors.toList());
     }
 
-
-    private UsuarioResponseDTO convertirAResponseDTO(Usuario usuario) {
-        UsuarioResponseDTO dto = new UsuarioResponseDTO();
-        dto.setId(usuario.getId());
-        dto.setNombre(usuario.getNombre());
-        dto.setEmail(usuario.getEmail());
-        dto.setTelefono(usuario.getTelefono());
-        dto.setRol(usuario.getRol().getNombreRol());
-        return dto;
+    @Override
+    public UsuarioResponseDTO asignarRol(Integer usuarioId, Integer rolId) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(usuarioId)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID " + usuarioId));
+        Rol rol = rolRepository.findById(rolId)
+                .orElseThrow(() -> new NotFoundException("Rol no encontrado con ID " + rolId));
+        usuario.setRol(rol);
+        Usuario actualizado = usuarioRepository.save(usuario);
+        return UsuarioResponseDTO.builder()
+                .id(actualizado.getId())
+                .nombre(actualizado.getNombre())
+                .email(actualizado.getEmail())
+                .telefono(actualizado.getTelefono())
+                .rol(actualizado.getRol().getNombreRol())
+                .build();
     }
 }
