@@ -135,6 +135,37 @@ public class IngredienteServiceImpl implements IngredienteServiceI {
         ingredienteRepository.deleteById(id);
     }
 
+    @Override
+    public IngredienteResponseDTO agregarAlergenoIngrediente(Integer ingredienteId, Integer alergenoId) {
+        // 1) Buscar ingrediente
+        Ingrediente ingrediente = ingredienteRepository.findById(ingredienteId)
+                .orElseThrow(() -> new NotFoundException("Ingrediente no encontrado con ID " + ingredienteId));
+
+        // 2) Buscar alérgeno
+        Alergeno aler = alergenoRepository.findById(alergenoId)
+                .orElseThrow(() -> new NotFoundException("Alérgeno no encontrado con ID " + alergenoId));
+
+        // 3) Verificar si ya existe la asociación
+        boolean yaExiste = ingredienteAlergenoRepository
+                .findByIngredienteId(ingredienteId)
+                .stream()
+                .anyMatch(ia -> ia.getAlergeno().getId().equals(alergenoId));
+        if (yaExiste) {
+            throw new BadRequestException("El ingrediente ya tiene asignado el alérgeno con ID " + alergenoId);
+        }
+
+        // 4) Crear y guardar la nueva asociación
+        IngredienteAlergeno nuevo = IngredienteAlergeno.builder()
+                .ingrediente(ingrediente)
+                .alergeno(aler)
+                .build();
+        ingredienteAlergenoRepository.save(nuevo);
+
+        // 5) Recargar la lista de alérgenos y devolver DTO
+        //    (ingrediente.getId() sigue siendo el mismo, JPA no ha eliminado el ingrediente,
+        //     así que la relación ahora incluye el nuevo alergeno)
+        return mapToDTO(ingrediente);
+    }
     private IngredienteResponseDTO mapToDTO(Ingrediente ingrediente) {
         List<AlergenoResponseDTO> alergenos = ingredienteAlergenoRepository
                 .findByIngredienteId(ingrediente.getId())

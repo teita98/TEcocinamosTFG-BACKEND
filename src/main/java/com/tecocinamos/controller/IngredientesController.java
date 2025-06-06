@@ -79,6 +79,20 @@ public class IngredientesController {
     }
 
     /**
+     * POST /api/v1/ingredientes/{ingredienteId}/alergenos/{alergenoId}
+     * Añade el alérgeno (alergenoId) al ingrediente (ingredienteId).
+     * Devuelve el IngredienteResponseDTO actualizado.
+     */
+    @PostMapping("/{ingredienteId}/alergenos/{alergenoId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<IngredienteResponseDTO> agregarAlergeno(
+            @PathVariable Integer ingredienteId,
+            @PathVariable Integer alergenoId) {
+        IngredienteResponseDTO actualizado = ingredienteService.agregarAlergenoIngrediente(ingredienteId, alergenoId);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    /**
      * PUT /api/v1/ingredientes/{id}
      * Actualizar ingrediente (solo ADMIN).
      */
