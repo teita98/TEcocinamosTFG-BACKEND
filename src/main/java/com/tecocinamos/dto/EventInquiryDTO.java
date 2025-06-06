@@ -19,6 +19,4 @@ public class EventInquiryDTO {
     @NotBlank(message = "El mensaje es obligatorio")
     private String mensaje;
 
-    @NotBlank(message = "Descripción del evento es obligatoria")
-    private String detalleEvento;
 }

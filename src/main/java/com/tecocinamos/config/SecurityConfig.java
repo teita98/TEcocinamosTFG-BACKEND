@@ -46,6 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/alergenos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ingredientes/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/contact/**").permitAll()
                         // El resto de rutas requieren autenticación
                         .anyRequest().authenticated()
                 )

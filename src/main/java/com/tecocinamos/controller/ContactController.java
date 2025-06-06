@@ -3,7 +3,6 @@ package com.tecocinamos.controller;
 import com.tecocinamos.dto.ContactFormDTO;
 import com.tecocinamos.dto.EventInquiryDTO;
 import com.tecocinamos.service.mail.MailServiceI;
-import com.tecocinamos.service.mail.MailServiceI;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -39,7 +38,7 @@ public class ContactController {
 
                 Un saludo,
                 El equipo de Tecocinamos
-                """.formatted(dto.getNombre(), dto.getDetalleEvento(), dto.getTelefono());
+                """.formatted(dto.getNombre(), dto.getMensaje(), dto.getTelefono());
 
         mailService.sendPlainTextEmail(to, subject, body);
 
@@ -49,14 +48,9 @@ public class ContactController {
         String bodyAdmin = """
                 El usuario %s (%s / %s) ha enviado una consulta de evento:
 
-                Detalles del evento:
-                %s
-
-                Mensaje:
                 %s
                 """.formatted(
                 dto.getNombre(), dto.getEmail(), dto.getTelefono(),
-                dto.getDetalleEvento(),
                 dto.getMensaje()
         );
         mailService.sendPlainTextEmail(adminEmail, subjectAdmin, bodyAdmin);

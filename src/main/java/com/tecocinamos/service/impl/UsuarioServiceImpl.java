@@ -109,7 +109,7 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
     @Override
     public UsuarioResponseDTO obtenerPerfilPropio() {
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
         return UsuarioResponseDTO.builder()
                 .id(usuario.getId())
@@ -161,13 +161,30 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID " + id));
         usuario.setEliminado(true);
         usuario.setFechaEliminado(java.time.LocalDate.now());
+
+        // Anonimizar campos únicos:
+        // Usamos el propio ID para formar una clave irrepetible: "anonimo<ID>"
+        String anonimoName = "anonimo" + usuario.getId();
+        usuario.setNombre(anonimoName);
+
+        // Para el email, construimos algo que no se repita y no colisione con ningún email real:
+        String anonimoEmail = anonimoName + usuario.getId() + "@deleted.tecocinamos";
+        usuario.setEmail(anonimoEmail);
+
+        // Para el contraseña, construimos algo que no se repita y no colisione con ningún email real:
+        String anonimoContrasena = anonimoName + usuario.getId();
+        usuario.setContrasena(anonimoContrasena);
+
+        // Vaciamos el teléfono (o ponemos un valor fijo, p.ej. cadena vacía)
+        usuario.setTelefono("");
+
         usuarioRepository.save(usuario);
     }
 
     @Override
     public void cambiarPassword(CambiarPasswordDTO dto) {
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(dto.getActual(), usuario.getContrasena())) {
@@ -180,7 +197,7 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
     @Override
     public UsuarioResponseDTO actualizarPerfil(ActualizarPerfilDTO dto) {
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         usuario.setNombre(dto.getNombre());

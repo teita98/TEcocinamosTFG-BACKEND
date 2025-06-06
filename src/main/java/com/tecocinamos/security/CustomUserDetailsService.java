@@ -17,7 +17,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario user = usuarioRepository.findByEmail(email)
+        Usuario user = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
 
         String rol = user.getRol().getNombreRol(); // e.g. "ADMIN" o "CLIENTE"

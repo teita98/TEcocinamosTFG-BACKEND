@@ -41,7 +41,7 @@ public class PedidoServiceImpl implements PedidoServiceI {
     @Override
     public PedidoResponseDTO crearPedido(PedidoRequestDTO dto) {
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         Estado estadoInicial = estadoRepository.findByNombreIgnoreCase("Pendiente")
@@ -132,7 +132,7 @@ public class PedidoServiceImpl implements PedidoServiceI {
                 .orElseThrow(() -> new NotFoundException("Pedido no encontrado con ID " + id));
 
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         // Si es cliente, solo puede ver su propio pedido
@@ -148,7 +148,7 @@ public class PedidoServiceImpl implements PedidoServiceI {
     @Override
     public List<PedidoListDTO> listarPedidosUsuario() {
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         return pedidoRepository.findByUsuarioId(usuario.getId()).stream()
@@ -199,7 +199,7 @@ public class PedidoServiceImpl implements PedidoServiceI {
                 .orElseThrow(() -> new NotFoundException("Pedido no encontrado con ID " + id));
 
         String email = SecurityUtil.getAuthenticatedEmail();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         // Si es cliente, solo puede cancelar si es propio y está pendiente
