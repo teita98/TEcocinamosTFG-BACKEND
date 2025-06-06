@@ -35,10 +35,10 @@ public class Plato {
     @Column(name = "stock")
     private Integer stock = 0;
 
-    @Column(name = "preparacion_casa", length = 200)
+    @Column(name = "preparacion_casa", length = 500)
     private String preparacionCasa;
 
-    @Column(name = "recomendaciones", length = 200)
+    @Column(name = "recomendaciones", length = 500)
     private String recomendaciones;
 
     @Column(name = "image_base_name", length = 100)
