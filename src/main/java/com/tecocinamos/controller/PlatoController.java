@@ -42,12 +42,6 @@ public class PlatoController {
         return ResponseEntity.ok(dtoPage);
     }
 
-//    // GET /api/v1/platos → obtener todos los platos
-//    @GetMapping
-//    public ResponseEntity<List<PlatoListDTO>> listarPlatos() {
-//        return ResponseEntity.ok(platoService.listarPlatos());
-//    }
-
     /**
      * GET /api/v1/platos/{id}
      * Obtener plato por ID (público).
@@ -72,11 +66,6 @@ public class PlatoController {
         Page<PlatoListDTO> dtoPage = platoService.buscarPorCategoria(categoria, pageable);
         return ResponseEntity.ok(dtoPage);
     }
-    //    // GET /api/v1/platos/categoria?nombre=
-//    @GetMapping("/categoria")
-//    public ResponseEntity<List<PlatoListDTO>> buscarPorCategoria(@RequestParam("nombre") String categoria) {
-//        return ResponseEntity.ok(platoService.buscarPorCategoria(categoria));
-//    }
 
     /**
      * GET /api/v1/platos/buscar?nombre=&page=&size=
@@ -91,11 +80,6 @@ public class PlatoController {
         Page<PlatoListDTO> dtoPage = platoService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(dtoPage);
     }
-//    // GET /platos/buscar?nombre= -> Buscar platos por nombre
-//    @GetMapping("/buscar")
-//    public ResponseEntity<List<PlatoListDTO>> buscarPorNombre(@RequestParam("nombre") String nombre) {
-//        return ResponseEntity.ok(platoService.buscarPorNombre(nombre));
-//    }
 
     /**
      * GET /api/v1/platos/{id}/ingredientes

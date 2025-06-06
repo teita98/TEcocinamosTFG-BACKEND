@@ -55,11 +55,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
             for (IngredienteDetalleDTO usado : dto.getIngredientesUsados()) {
                 Ingrediente ing = ingredienteRepository.findById(usado.getIngredienteId())
                         .orElseThrow(() -> new NotFoundException("Ingrediente no encontrado con ID " + usado.getIngredienteId()));
-                if (ing.getStock() < usado.getCantidadUsada().intValue()) {
-                    throw new BadRequestException("No hay suficiente stock de ingrediente: " + ing.getNombre());
-                }
-                // Reducir stock de ingrediente
-                ing.setStock(ing.getStock() - usado.getCantidadUsada().intValue());
+
                 ingredienteRepository.save(ing);
 
                 PlatoIngrediente pi = PlatoIngrediente.builder()
@@ -97,7 +93,6 @@ public class PlatoServiceImpl implements PlatoServiceI {
         List<PlatoIngrediente> antiguos = platoIngredienteRepository.findByPlato(plato);
         for (PlatoIngrediente pi : antiguos) {
             Ingrediente ingPrev = pi.getIngrediente();
-            ingPrev.setStock(ingPrev.getStock() + pi.getCantidadUsada().intValue());
             ingredienteRepository.save(ingPrev);
         }
         platoIngredienteRepository.deleteAll(antiguos);
@@ -109,12 +104,6 @@ public class PlatoServiceImpl implements PlatoServiceI {
             for (IngredienteDetalleDTO usado : dto.getIngredientesUsados()) {
                 Ingrediente ing = ingredienteRepository.findById(usado.getIngredienteId())
                         .orElseThrow(() -> new NotFoundException("Ingrediente no encontrado con ID " + usado.getIngredienteId()));
-                if (ing.getStock() < usado.getCantidadUsada().intValue()) {
-                    throw new BadRequestException("No hay suficiente stock de ingrediente: " + ing.getNombre());
-                }
-                // Reducir stock de ingrediente
-                ing.setStock(ing.getStock() - usado.getCantidadUsada().intValue());
-                ingredienteRepository.save(ing);
 
                 PlatoIngrediente pi = PlatoIngrediente.builder()
                         .plato(actualizado)
@@ -134,12 +123,11 @@ public class PlatoServiceImpl implements PlatoServiceI {
         if (!platoRepository.existsById(id)) {
             throw new NotFoundException("Plato no encontrado con ID " + id);
         }
-        // Antes de eliminar, restaurar stock de ingredientes
+
         Plato plato = platoRepository.findById(id).get();
         List<PlatoIngrediente> usados = platoIngredienteRepository.findByPlato(plato);
         for (PlatoIngrediente pi : usados) {
             Ingrediente ing = pi.getIngrediente();
-            ing.setStock(ing.getStock() + pi.getCantidadUsada().intValue());
             ingredienteRepository.save(ing);
         }
         platoIngredienteRepository.deleteAll(usados);

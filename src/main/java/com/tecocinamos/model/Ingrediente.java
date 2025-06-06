@@ -43,10 +43,6 @@ public class Ingrediente {
     @Column(name = "unidad", length = 20)
     private String unidad;
 
-    @Builder.Default
-    @Column(name = "stock")
-    private Integer stock = 0;
-
     @ManyToOne
     @JoinColumn(name = "proveedor_id")
     private Proveedor proveedor;
