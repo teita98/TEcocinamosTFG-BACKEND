@@ -43,7 +43,7 @@ public class ContactController {
         mailService.sendPlainTextEmail(to, subject, body);
 
         // 1.2) Avisar internamente al admin
-        String adminEmail = "tcharlomillan@gmail.com";
+        String adminEmail = "tecocinamoscatering@gmail.com";
         String subjectAdmin = "Nueva consulta de evento desde el front: " + dto.getNombre();
         String bodyAdmin = """
                 El usuario %s (%s / %s) ha enviado una consulta de evento:
@@ -82,7 +82,7 @@ public class ContactController {
         mailService.sendPlainTextEmail(to, subject, body);
 
         // 2.2) Notificar por email a un admin
-        String adminEmail = "tcharlomillan@gmail.com";
+        String adminEmail = "tecocinamoscatering@gmail.com";
         String subjectAdmin = "Nuevo formulario de contacto de: " + dto.getNombre();
         String bodyAdmin = """
                 El usuario %s (%s / %s) ha enviado un mensaje de contacto:
