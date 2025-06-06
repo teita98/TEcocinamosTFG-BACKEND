@@ -6,6 +6,9 @@ import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @RestController
@@ -35,17 +38,26 @@ public class EstadisticaController {
             @RequestParam String desde,
             @RequestParam String hasta) {
         try {
-            Date fechaDesde = java.sql.Date.valueOf(desde);
-            Date fechaHasta = java.sql.Date.valueOf(hasta);
-            double ingresos = estadisticaService.obtenerIngresosPorPeriodo(fechaDesde, fechaHasta);
+            LocalDate ldDesde = LocalDate.parse(desde, DateTimeFormatter.ISO_DATE);
+            LocalDate ldHasta = LocalDate.parse(hasta, DateTimeFormatter.ISO_DATE);
+
+            double ingresos = estadisticaService.obtenerIngresosPorPeriodo(ldDesde, ldHasta);
+
             Map<String, Object> resp = Map.of(
                     "ingresos", ingresos,
-                    "desde", desde,
-                    "hasta", hasta
+                    "desde",    desde,
+                    "hasta",    hasta
             );
             return ResponseEntity.ok(resp);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Formato de fecha inválido. Use YYYY-MM-DD"));
+
+        } catch (DateTimeParseException ex) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", "Formato de fecha inválido. Use YYYY-MM-DD"));
+        } catch (Exception ex) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno: " + ex.getMessage()));
         }
     }
 

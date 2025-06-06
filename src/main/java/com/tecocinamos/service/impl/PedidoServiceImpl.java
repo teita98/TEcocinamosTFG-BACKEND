@@ -211,6 +211,7 @@ public class PedidoServiceImpl implements PedidoServiceI {
         String emailAdmin = SecurityUtil.getAuthenticatedEmail();
         logUtil.registrar(
                 "Pedido",
+                pedidoId,
                 "estado",
                 anterior.getNombre(),
                 nuevoEstado.getNombre(),

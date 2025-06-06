@@ -26,6 +26,9 @@ public class LogAuditoria {
     @Column(name = "entidad", length = 50)
     private String entidad;
 
+    @Column(name = "entidad_id", length = 50)
+    private Integer entidadId;
+
     @Column(name = "campo_modificado", length = 50)
     private String campoModificado;
 

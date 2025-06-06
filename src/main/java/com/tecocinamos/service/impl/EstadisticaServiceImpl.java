@@ -7,6 +7,8 @@ import jakarta.persistence.Query;
 import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -39,16 +41,34 @@ public class EstadisticaServiceImpl implements EstadisticaServiceI {
     }
 
     @Override
-    public double obtenerIngresosPorPeriodo(Date fechaDesde, Date fechaHasta) {
-        String jpql = "SELECT SUM(p.total) FROM Pedido p " +
-                "WHERE p.fechaCreado BETWEEN :desde AND :hasta " +
-                "AND p.estado.nombre <> 'Cancelado'";
+    public double obtenerIngresosPorPeriodo(LocalDate fechaDesde, LocalDate fechaHasta) {
+        String jpql = """
+        SELECT SUM(p.total)
+          FROM Pedido p
+         WHERE p.fechaCreado BETWEEN :desde AND :hasta
+           AND p.estado.nombre <> 'Cancelado'
+        """;
+
         Query q = em.createQuery(jpql);
         q.setParameter("desde", fechaDesde);
         q.setParameter("hasta", fechaHasta);
-        Double res = (Double) q.getSingleResult();
-        return res == null ? 0.0 : res;
+
+        // Obtenemos el resultado como Number (o BigDecimal)
+        Object raw = q.getSingleResult();
+        if (raw == null) {
+            return 0.0;
+        }
+
+        if (raw instanceof BigDecimal) {
+            return ((BigDecimal) raw).doubleValue();
+        } else if (raw instanceof Number) {
+            return ((Number) raw).doubleValue();
+        } else {
+            // En principio no debería llegar aquí, pero por seguridad:
+            throw new IllegalStateException("Tipo inesperado devuelto por SUM(): " + raw.getClass());
+        }
     }
+
 
     @Override
     public List<Map<String, Object>> contarPedidosPorEstado() {

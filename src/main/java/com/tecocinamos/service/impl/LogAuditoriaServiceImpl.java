@@ -22,6 +22,7 @@ public class LogAuditoriaServiceImpl implements LogAuditoriaServiceI {
                 .map(log -> LogAuditoriaDTO.builder()
                         .id(log.getId())
                         .entidad(log.getEntidad())
+                        .entidadId(log.getEntidadId())
                         .campoModificado(log.getCampoModificado())
                         .valorAnterior(log.getValorAnterior())
                         .valorNuevo(log.getValorNuevo())

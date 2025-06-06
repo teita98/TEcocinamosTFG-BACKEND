@@ -30,12 +30,13 @@ public class LogAuditoriaUtil {
      * @param accion  Descripción de la acción (ej. "Cambio de estado")
      * @param emailAdmin  Email del usuario admin que realiza la acción
      */
-    public void registrar(String entidad, String campo, String anterior, String nuevo, String accion, String emailAdmin) {
+    public void registrar(String entidad, Integer entidadId, String campo, String anterior, String nuevo, String accion, String emailAdmin) {
         Usuario admin = usuarioRepository.findByEmailAndEliminadoFalse(emailAdmin)
                 .orElseThrow(() -> new RuntimeException("Admin no encontrado para el log de auditoría"));
 
         LogAuditoria log = LogAuditoria.builder()
                 .entidad(entidad)
+                .entidadId(entidadId)
                 .campoModificado(campo)
                 .valorAnterior(anterior)
                 .valorNuevo(nuevo)

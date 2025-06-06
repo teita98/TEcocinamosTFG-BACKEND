@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class LogAuditoriaDTO {
     private Integer id;
     private String entidad;
+    private Integer entidadId;
     private String campoModificado;
     private String valorAnterior;
     private String valorNuevo;

@@ -11,6 +11,7 @@ import com.tecocinamos.security.CustomUserDetailsService;
 import com.tecocinamos.security.JwtUtils;
 import com.tecocinamos.service.UsuarioServiceI;
 import com.tecocinamos.service.mail.MailServiceI;
+import com.tecocinamos.util.LogAuditoriaUtil;
 import com.tecocinamos.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,6 +49,9 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
 
     @Autowired
     private MailServiceI mailServiceI;
+
+    @Autowired
+    private LogAuditoriaUtil logUtil;
 
     @Override
     public UsuarioResponseDTO registrarUsuario(UsuarioRegisterDTO dto) {
@@ -178,6 +182,17 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
         // Vaciamos el teléfono (o ponemos un valor fijo, p.ej. cadena vacía)
         usuario.setTelefono("");
 
+        String emailAdmin = SecurityUtil.getAuthenticatedEmail();
+        logUtil.registrar(
+                "Usuario",
+                id,
+                "eliminado",
+                "activo",
+                "eliminado",
+                "Baja de usuario",
+                emailAdmin
+        );
+
         usuarioRepository.save(usuario);
     }
 
@@ -196,13 +211,47 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
 
     @Override
     public UsuarioResponseDTO actualizarPerfil(ActualizarPerfilDTO dto) {
+        // 1) Obtenemos el email del usuario autenticado
         String email = SecurityUtil.getAuthenticatedEmail();
         Usuario usuario = usuarioRepository.findByEmailAndEliminadoFalse(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
+        // 2) Guardamos valores antiguos para compararlos después
+        String nombreAnterior = usuario.getNombre();
+        String telefonoAnterior = usuario.getTelefono();
+
+        // 3) Actualizamos campos
         usuario.setNombre(dto.getNombre());
         usuario.setTelefono(dto.getTelefono());
         Usuario actualizado = usuarioRepository.save(usuario);
+
+        // 4) Si cambió el nombre, registramos auditoría
+        if (!nombreAnterior.equals(dto.getNombre())) {
+            logUtil.registrar(
+                    "Usuario",
+                    actualizado.getId(),
+                    "nombre",
+                    nombreAnterior,
+                    dto.getNombre(),
+                    "Edición de usuario",
+                    email
+            );
+        }
+
+        // 5) Si cambió el teléfono, registramos auditoría
+        if (telefonoAnterior == null) telefonoAnterior = "";
+        if (!telefonoAnterior.equals(dto.getTelefono())) {
+            logUtil.registrar(
+                    "Usuario",
+                    actualizado.getId(),
+                    "telefono",
+                    telefonoAnterior,
+                    dto.getTelefono(),
+                    "Edición de usuario",
+                    email
+            );
+        }
+
         return UsuarioResponseDTO.builder()
                 .id(actualizado.getId())
                 .nombre(actualizado.getNombre())
@@ -228,12 +277,31 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
 
     @Override
     public UsuarioResponseDTO asignarRol(Integer usuarioId, Integer rolId) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(usuarioId)
+        // 1) Buscamos al usuario y al nuevo rol
+        Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID " + usuarioId));
-        Rol rol = rolRepository.findById(rolId)
+        Rol nuevoRol = rolRepository.findById(rolId)
                 .orElseThrow(() -> new NotFoundException("Rol no encontrado con ID " + rolId));
-        usuario.setRol(rol);
+
+        // 2) Guardamos rol anterior para el log
+        String rolAnterior = usuario.getRol().getNombreRol();
+
+        // 3) Actualizamos
+        usuario.setRol(nuevoRol);
         Usuario actualizado = usuarioRepository.save(usuario);
+
+        // 4) Registramos auditoría
+        String emailAdmin = SecurityUtil.getAuthenticatedEmail(); // será el que hace la petición
+        logUtil.registrar(
+                "Usuario",
+                usuarioId,
+                "rol",
+                rolAnterior,
+                nuevoRol.getNombreRol(),
+                "Cambio de rol",
+                emailAdmin
+        );
+
         return UsuarioResponseDTO.builder()
                 .id(actualizado.getId())
                 .nombre(actualizado.getNombre())

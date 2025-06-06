@@ -1,5 +1,6 @@
 package com.tecocinamos.service;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,7 @@ public interface EstadisticaServiceI {
      * Devuelve la suma de totales de todos los pedidos cuyo campo fechaCreado esté entre fechaDesde y fechaHasta,
      * excluyendo aquellos en estado 'Cancelado'.
      */
-    double obtenerIngresosPorPeriodo(Date fechaDesde, Date fechaHasta);
+    double obtenerIngresosPorPeriodo(LocalDate fechaDesde, LocalDate fechaHasta);
 
     /**
      * Devuelve lista de mapas con {"estado", String}, {"cantidad", Long} para cada estado de pedido.
