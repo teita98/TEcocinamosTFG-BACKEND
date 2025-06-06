@@ -222,6 +222,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
     private PlatoResponseDTO convertirAResponse(Plato plato) {
         List<IngredienteDetalleDTO> ingredientes = plato.getIngredientes().stream()
                 .map(pi -> IngredienteDetalleDTO.builder()
+                        .ingredienteId(pi.getIngrediente().getId())
                         .nombreIngrediente(pi.getIngrediente().getNombre())
                         .cantidadUsada(pi.getCantidadUsada())
                         .unidad(pi.getUnidad())
