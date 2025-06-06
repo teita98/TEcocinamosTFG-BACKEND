@@ -23,7 +23,6 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
-
     @Autowired
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
@@ -32,8 +31,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // 1) Habilitamos CORS para que tome la configuración de WebConfig.corsConfigurer()
+                .cors()
+                .and()
+                // 2) Deshabilitamos CSRF (usamos JWT y REST)
                 .csrf(csrf -> csrf.disable())
+                // 3) Definimos que esta API es stateless
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 4) Configuramos permisos por ruta
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas:
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
@@ -41,9 +46,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/alergenos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ingredientes/**").permitAll()
-                        // El resto requiere autenticación:
+                        // El resto de rutas requieren autenticación
                         .anyRequest().authenticated()
                 )
+                // 5) Insertamos el filtro JWT antes de UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
