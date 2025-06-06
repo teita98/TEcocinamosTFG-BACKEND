@@ -215,6 +215,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
                 .precio(plato.getPrecio())
                 .categoria(plato.getCategoria().getNombre())
                 .stock(plato.getStock())
+                .imageBaseName(plato.getImageBaseName())
                 .build();
     }
 

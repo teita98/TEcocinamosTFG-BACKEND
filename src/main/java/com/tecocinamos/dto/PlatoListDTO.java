@@ -14,5 +14,6 @@ public class PlatoListDTO {
     private String nombrePlato;
     private BigDecimal precio;
     private String categoria;
+    private String imageBaseName;
     private Integer stock;
 }
