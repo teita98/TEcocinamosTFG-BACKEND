@@ -10,6 +10,7 @@ import com.tecocinamos.repository.UsuarioRepository;
 import com.tecocinamos.security.CustomUserDetailsService;
 import com.tecocinamos.security.JwtUtils;
 import com.tecocinamos.service.UsuarioServiceI;
+import com.tecocinamos.service.mail.MailServiceI;
 import com.tecocinamos.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,6 +46,9 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private MailServiceI mailServiceI;
+
     @Override
     public UsuarioResponseDTO registrarUsuario(UsuarioRegisterDTO dto) {
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
@@ -61,6 +65,24 @@ public class UsuarioServiceImpl implements UsuarioServiceI {
                 .eliminado(false)
                 .build();
         Usuario guardado = usuarioRepository.save(usuario);
+
+        // Enviar email de bienvenida (HTML o texto plano)
+        String to = guardado.getEmail();
+        String subject = "¡Bienvenido a Tecocinamos!";
+        String htmlBody = """
+                <html>
+                  <body>
+                    <h2>Hola, %s!</h2>
+                    <p>Gracias por registrarte en <b>Tecocinamos</b>.</p>
+                    <p>Ya puedes explorar nuestro menú, hacer pedidos y disfrutar de nuestros servicios de catering.</p>
+                    <br>
+                    <p>Un saludo,<br>El equipo de Tecocinamos</p>
+                  </body>
+                </html>
+                """.formatted(guardado.getNombre());
+
+        mailServiceI.sendHtmlEmail(to, subject, htmlBody);
+
         return UsuarioResponseDTO.builder()
                 .id(guardado.getId())
                 .nombre(guardado.getNombre())

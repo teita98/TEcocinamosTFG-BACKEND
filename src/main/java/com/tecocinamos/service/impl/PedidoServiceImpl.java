@@ -7,6 +7,7 @@ import com.tecocinamos.exception.NotFoundException;
 import com.tecocinamos.model.*;
 import com.tecocinamos.repository.*;
 import com.tecocinamos.service.PedidoServiceI;
+import com.tecocinamos.service.mail.MailServiceI;
 import com.tecocinamos.util.LogAuditoriaUtil;
 import com.tecocinamos.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,21 +25,18 @@ public class PedidoServiceImpl implements PedidoServiceI {
 
     @Autowired
     private PedidoRepository pedidoRepository;
-
     @Autowired
     private DetallesPedidoRepository detallesPedidoRepository;
-
     @Autowired
     private EstadoRepository estadoRepository;
-
     @Autowired
     private PlatoRepository platoRepository;
-
     @Autowired
     private UsuarioRepository usuarioRepository;
-
     @Autowired
     private LogAuditoriaUtil logUtil;
+    @Autowired
+    private MailServiceI mailService;
 
     @Override
     public PedidoResponseDTO crearPedido(PedidoRequestDTO dto) {
@@ -91,6 +89,39 @@ public class PedidoServiceImpl implements PedidoServiceI {
 
         guardado.setTotal(total);
         pedidoRepository.save(guardado);
+
+        // Enviar correo de confirmación al usuario
+        String to = usuario.getEmail();
+        String subject = "Confirmación de tu pedido #" + guardado.getId();
+        // Construir un texto plano con los detalles del pedido
+        StringBuilder bodyBuilder = new StringBuilder();
+        bodyBuilder.append("Hola ").append(usuario.getNombre()).append(",\n\n");
+        bodyBuilder.append("Gracias por tu pedido. Aquí tienes un resumen:\n\n");
+        bodyBuilder.append("Pedido ID: ").append(guardado.getId()).append("\n")
+                .append("Fecha entrega: ").append(guardado.getFechaEntrega()).append("\n")
+                .append("Dirección de entrega: ").append(guardado.getDireccionEntrega()).append("\n\n")
+                .append("Detalles:\n");
+
+        // Listar cada plato, cantidad y subtotal
+        List<DetallesPedidoDTO> detallesDTO = dto.getDetalles();
+        for (DetallesPedidoDTO detalleDTO : detallesDTO) {
+            Plato plato = platoRepository.findById(detalleDTO.getPlatoId()).get();
+            BigDecimal precioUnitario = plato.getPrecio();
+            BigDecimal descuento = detalleDTO.getDescuento() != null ? detalleDTO.getDescuento() : BigDecimal.ZERO;
+            BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(detalleDTO.getCantidadPlato()))
+                    .subtract(descuento);
+
+            bodyBuilder.append("- ").append(plato.getNombrePlato())
+                    .append(" x ").append(detalleDTO.getCantidadPlato())
+                    .append(" @ ").append(precioUnitario).append(" €")
+                    .append(detalleDTO.getDescuento() != null && detalleDTO.getDescuento().compareTo(BigDecimal.ZERO) > 0
+                            ? " (Descuento: " + descuento + " €)" : "")
+                    .append(" => Subtotal: ").append(subtotal).append(" €\n");
+        }
+        bodyBuilder.append("\nTotal del pedido: ").append(total).append(" €\n\n");
+        bodyBuilder.append("Un saludo,\nEl equipo de Tecocinamos");
+
+        mailService.sendPlainTextEmail(to, subject, bodyBuilder.toString());
 
         return mapToResponseDTO(guardado);
     }

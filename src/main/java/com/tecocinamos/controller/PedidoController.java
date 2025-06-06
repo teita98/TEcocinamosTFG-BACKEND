@@ -34,7 +34,7 @@ public class PedidoController {
      * Listar pedidos del usuario autenticado (CLIENTE).
      */
     @GetMapping("/usuario")
-    @PreAuthorize("hasRole('CLIENTE')")
+    @PreAuthorize("hasAnyRole('CLIENTE','ADMIN')")
     public ResponseEntity<List<PedidoListDTO>> listarPedidosUsuario() {
         List<PedidoListDTO> lista = pedidoService.listarPedidosUsuario();
         return ResponseEntity.ok(lista);
