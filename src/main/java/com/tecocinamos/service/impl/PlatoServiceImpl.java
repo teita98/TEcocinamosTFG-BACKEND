@@ -44,6 +44,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
         plato.setStock(dto.getStock());
         plato.setPreparacionCasa(dto.getPreparacionCasa());
         plato.setRecomendaciones(dto.getRecomendaciones());
+        plato.setImageBaseName(dto.getImageBaseName());
         plato.setCategoria(categoria);
         plato.setFechaActualizacion(LocalDateTime.now());
 
@@ -88,6 +89,7 @@ public class PlatoServiceImpl implements PlatoServiceI {
         plato.setStock(dto.getStock());
         plato.setPreparacionCasa(dto.getPreparacionCasa());
         plato.setRecomendaciones(dto.getRecomendaciones());
+        plato.setImageBaseName(dto.getImageBaseName());
         plato.setCategoria(categoria);
         plato.setFechaActualizacion(LocalDateTime.now());
 
@@ -217,25 +219,12 @@ public class PlatoServiceImpl implements PlatoServiceI {
     }
 
     private PlatoResponseDTO convertirAResponse(Plato plato) {
-        List<IngredienteDetalleDTO> ingredientes = platoIngredienteRepository.findByPlato(plato).stream()
+        List<IngredienteDetalleDTO> ingredientes = plato.getIngredientes().stream()
                 .map(pi -> IngredienteDetalleDTO.builder()
-                        .ingredienteId(pi.getIngrediente().getId())
                         .nombreIngrediente(pi.getIngrediente().getNombre())
                         .cantidadUsada(pi.getCantidadUsada())
                         .unidad(pi.getUnidad())
                         .build())
-                .collect(Collectors.toList());
-
-        // Generar lista deduplicada de alérgenos
-        Set<Alergeno> alSet = new HashSet<>();
-        for (PlatoIngrediente pi : plato.getIngredientes()) {
-            List<IngredienteAlergeno> ingsAll = ingredienteAlergenoRepository.findByIngredienteId(pi.getIngrediente().getId());
-            for (IngredienteAlergeno ia : ingsAll) {
-                alSet.add(ia.getAlergeno());
-            }
-        }
-        List<AlergenoResponseDTO> alergenos = alSet.stream()
-                .map(a -> AlergenoResponseDTO.builder().id(a.getId()).nombre(a.getNombre()).build())
                 .collect(Collectors.toList());
 
         return PlatoResponseDTO.builder()
@@ -248,7 +237,8 @@ public class PlatoServiceImpl implements PlatoServiceI {
                 .recomendaciones(plato.getRecomendaciones())
                 .categoriaNombre(plato.getCategoria().getNombre())
                 .ingredientes(ingredientes)
-                .alergenos(alergenos)
+                .imageBaseName(plato.getImageBaseName()) // ← lo que acabamos de añadir
                 .build();
     }
+
 }

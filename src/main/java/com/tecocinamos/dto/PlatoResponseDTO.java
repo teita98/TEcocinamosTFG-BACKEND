@@ -17,7 +17,7 @@ public class PlatoResponseDTO {
     private Integer stock;
     private String preparacionCasa;
     private String recomendaciones;
+    private String imageBaseName;
     private String categoriaNombre;
     private List<IngredienteDetalleDTO> ingredientes;
-    private List<AlergenoResponseDTO> alergenos; // lista deduplicada de alérgenos
 }

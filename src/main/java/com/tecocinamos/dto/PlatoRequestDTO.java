@@ -29,6 +29,8 @@ public class PlatoRequestDTO {
 
     private String recomendaciones;   // opcional
 
+    private String imageBaseName;
+
     @NotNull(message = "La categoríaId es obligatoria")
     private Integer categoriaId;
 
@@ -38,9 +40,4 @@ public class PlatoRequestDTO {
      */
     private List<IngredienteDetalleDTO> ingredientesUsados;
 
-    /**
-     * Lista de IDs de alérgenos. Aunque los alérgenos se heredan de los ingredientes,
-     * este campo puede servir para añadir alérgenos extra (opcional).
-     */
-    private List<Integer> alergenosIds;
 }

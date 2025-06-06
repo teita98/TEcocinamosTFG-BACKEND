@@ -41,6 +41,9 @@ public class Plato {
     @Column(name = "recomendaciones", length = 200)
     private String recomendaciones;
 
+    @Column(name = "image_base_name", length = 100)
+    private String imageBaseName;
+
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
